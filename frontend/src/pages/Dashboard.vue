@@ -54,6 +54,11 @@ const maxCount = computed(() => {
             <div class="bar"><span :style="{ width: (data.未平隔离 / maxCount * 100) + '%' }"></span></div>
             <span class="v">{{ data.未平隔离 }}</span>
           </div>
+          <div class="meter-row">
+            <span class="n">旁路</span>
+            <div class="bar"><span :style="{ width: ((data.旁路待晋升 || 0) / maxCount * 100) + '%' }"></span></div>
+            <span class="v">{{ data.旁路待晋升 || 0 }}</span>
+          </div>
         </div>
       </section>
 

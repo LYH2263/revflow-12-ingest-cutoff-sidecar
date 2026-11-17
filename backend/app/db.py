@@ -12,8 +12,10 @@ DB_PATH = DATA_DIR / "app.db"
 
 
 def connect() -> sqlite3.Connection:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    # 每次连接回读环境变量，便于测试用独立 DATA_DIR 隔离
+    data_dir = Path(os.environ.get("DATA_DIR", DATA_DIR))
+    data_dir.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(data_dir / "app.db")
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

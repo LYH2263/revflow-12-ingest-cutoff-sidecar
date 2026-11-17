@@ -25,16 +25,36 @@ def dashboard() -> dict:
             "SELECT COUNT(*) AS c FROM ledger_entries WHERE status = '待归并'"
         ).fetchone()["c"]
         q = conn.execute("SELECT COUNT(*) AS c FROM quarantine_items").fetchone()["c"]
+        side_pending = conn.execute(
+            "SELECT COUNT(*) AS c FROM sidecar_forward_entries WHERE status = '旁路待晋升'"
+        ).fetchone()["c"]
+        side_total = conn.execute(
+            "SELECT COUNT(*) AS c FROM sidecar_forward_entries"
+        ).fetchone()["c"]
         bal = conn.execute("SELECT COALESCE(SUM(balance_cents), 0) AS s FROM accounts").fetchone()["s"]
         last = conn.execute("SELECT * FROM settle_runs ORDER BY id DESC LIMIT 1").fetchone()
+        cutoffs = rows_to_dicts(
+            conn.execute(
+                """
+                SELECT c.scope_type, c.account_id, c.cutoff_at, c.updated_at,
+                       a.code AS account_code
+                FROM cutoff_configs c
+                LEFT JOIN accounts a ON a.id = c.account_id
+                ORDER BY c.scope_type
+                """
+            ).fetchall()
+        )
         return {
             "账户数": len(accounts),
             "正向笔数": fwd,
             "冲正笔数": rev,
             "待归并": pending,
             "未平隔离": q,
+            "旁路待晋升": side_pending,
+            "旁路累计": side_total,
             "余额合计分": bal,
             "最近归并": dict(last) if last else None,
+            "截止配置": cutoffs,
             "账户": accounts,
         }
 
@@ -207,6 +227,13 @@ def run_settle() -> dict:
 
         # 无流水账户余额清零（本轮未触及则保持；底座简化：仅写触及账户）
         finished = _now()
+        # 分列数字全部回源旁路表/主表快照，与归并结果同源
+        sidecar_pending = conn.execute(
+            "SELECT COUNT(*) AS c FROM sidecar_forward_entries WHERE status = '旁路待晋升'"
+        ).fetchone()["c"]
+        sidecar_promoted = conn.execute(
+            "SELECT COUNT(*) AS c FROM sidecar_forward_entries WHERE status = '已晋升'"
+        ).fetchone()["c"]
         conn.execute(
             """
             UPDATE settle_runs
@@ -216,6 +243,9 @@ def run_settle() -> dict:
                 settled_count = ?,
                 quarantine_count = ?,
                 net_cents = ?,
+                main_written_count = ?,
+                sidecar_intercepted_count = ?,
+                sidecar_promoted_count = ?,
                 finished_at = ?
             WHERE id = ?
             """,
@@ -225,6 +255,9 @@ def run_settle() -> dict:
                 settled,
                 quarantined,
                 net_total,
+                len(forwards),
+                sidecar_pending,
+                sidecar_promoted,
                 finished,
                 run_id,
             ),

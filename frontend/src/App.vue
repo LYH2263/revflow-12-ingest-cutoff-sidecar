@@ -16,9 +16,10 @@
         <router-link to="/accounts"><span class="idx">02</span>账户</router-link>
         <router-link to="/forward"><span class="idx">03</span>正向流水</router-link>
         <router-link to="/reversal"><span class="idx">04</span>冲正流水</router-link>
-        <router-link to="/settle"><span class="idx">05</span>归并台</router-link>
-        <router-link to="/quarantine"><span class="idx">06</span>未平隔离</router-link>
-        <router-link to="/verify"><span class="idx">07</span>净额互证</router-link>
+        <router-link to="/cutoff"><span class="idx">05</span>装载截止闸</router-link>
+        <router-link to="/settle"><span class="idx">06</span>归并台</router-link>
+        <router-link to="/quarantine"><span class="idx">07</span>未平隔离</router-link>
+        <router-link to="/verify"><span class="idx">08</span>净额互证</router-link>
       </nav>
 
       <div class="rail-note">
